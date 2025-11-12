@@ -46,7 +46,17 @@ def preprocess(prompt: str, steps: Steps, gpu_id: str, cfg: DictConfig) -> Dict[
 
 
 def process_visual(prompt: str, steps: Steps, gpu_id: str, cfg: DictConfig) -> DictConfig:
-    obj_selector = steps["Mesh Retrieval"]["Object Selection"]
+    if "Mesh Retrieval" not in steps.steps:
+        raise ValueError("Mesh Retrieval step not found. Please ensure Mesh Retrieval completed successfully before running Link Articulation.")
+    
+    mesh_retrieval_steps = steps["Mesh Retrieval"]
+    if not isinstance(mesh_retrieval_steps, Steps):
+        raise ValueError("Mesh Retrieval step result is not in the expected format.")
+    
+    if "Object Selection" not in mesh_retrieval_steps.steps:
+        raise ValueError("Object Selection not found in Mesh Retrieval results. Please ensure Mesh Retrieval completed successfully.")
+    
+    obj_selector = mesh_retrieval_steps["Object Selection"]
     # we will articulate the object that was selected by template match
     selected_obj_id = obj_selector.load_prediction()["obj_id"]
     render_partnet_obj(selected_obj_id, gpu_id, cfg, "stationary")
@@ -71,11 +81,23 @@ def process_partnet(obj_id: str, steps: Steps, gpu_id: str, cfg: DictConfig) -> 
 
 def process_text(prompt: str, steps: Steps, gpu_id: str, cfg: DictConfig) -> DictConfig:
     """Process text modality."""
+    if "Mesh Retrieval" not in steps.steps:
+        raise ValueError("Mesh Retrieval step not found. Please ensure Mesh Retrieval completed successfully before running Link Articulation.")
+    
+    mesh_retrieval_steps = steps["Mesh Retrieval"]
+    if not isinstance(mesh_retrieval_steps, Steps):
+        raise ValueError("Mesh Retrieval step result is not in the expected format.")
+    
+    if "Box Layout" not in mesh_retrieval_steps.steps:
+        raise ValueError("Box Layout not found in Mesh Retrieval results. Please ensure Mesh Retrieval completed successfully.")
+    if "Mesh Retrieval" not in mesh_retrieval_steps.steps:
+        raise ValueError("Mesh Retrieval sub-step not found in Mesh Retrieval results. Please ensure Mesh Retrieval completed successfully.")
+    
     cfg.link_actor.mode = "text"
-    layout_planner = steps["Mesh Retrieval"]["Box Layout"]
+    layout_planner = mesh_retrieval_steps["Box Layout"]
     box_layout = layout_planner.load_prediction()
 
-    mesh_searcher = steps["Mesh Retrieval"]["Mesh Retrieval"]
+    mesh_searcher = mesh_retrieval_steps["Mesh Retrieval"]
     mesh_info = mesh_searcher.load_prediction()
     meshes = {k: v["mesh_file"] for k, v in mesh_info.items()}
 

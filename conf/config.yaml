@@ -9,7 +9,7 @@ max_load_per_gpu: 10
 obj_ids: null
 gpu_id: 0
 cam_view: frontview
-model_name: gemini-1.5-flash-latest
+model_name: gemini-2.0-flash
 link_placement_path: null
 gen_config:
   overwrite: false # whether to overwrite the VLM output

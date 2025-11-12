@@ -23,13 +23,39 @@ def setup_gemini(model_name, system_instruction=None, api_key=None):
 
     genai.configure(api_key=api_key)
 
-    # genai.list_models()
-    return genai.GenerativeModel(
-        model_name,
-        system_instruction=system_instruction,
-    )
-
-
+    # Map common model names to their correct API identifiers
+    model_name_mapping = {
+        "gemini-2.0-flash-latest": "gemini-2.0-flash",
+        "gemini-2.0-flash": "gemini-2.0-flash",
+        "gemini-1.5-pro": "gemini-1.5-pro",
+        "gemini-pro": "gemini-pro",
+    }
+    
+    # Normalize the model name
+    normalized_name = model_name_mapping.get(model_name, model_name)
+    
+    try:
+        return genai.GenerativeModel(
+            normalized_name,
+            system_instruction=system_instruction,
+        )
+    except Exception as e:
+        # If the model fails, try to list available models and suggest alternatives
+        logging.warning(f"Failed to initialize model '{normalized_name}': {e}")
+        try:
+            available_models = genai.list_models()
+            model_names = [m.name for m in available_models if 'generateContent' in m.supported_generation_methods]
+            logging.info(f"Available models: {model_names}")
+            # Try gemini-pro as fallback
+            if normalized_name != "gemini-pro" and "gemini-pro" in model_names:
+                logging.info("Trying fallback model: gemini-pro")
+                return genai.GenerativeModel(
+                    "gemini-pro",
+                    system_instruction=system_instruction,
+                )
+        except Exception as list_error:
+            logging.error(f"Could not list available models: {list_error}")
+        raise
 
 
 def setup_vlm_model(model_name, system_instruction=None, api_key=None):
@@ -41,19 +67,6 @@ def setup_vlm_model(model_name, system_instruction=None, api_key=None):
         return setup_claude(model_name, system_instruction, api_key)
     else:
         raise ValueError("Model name must contain 'gpt' or 'gemini'. Got: {}".format(model_name))
-
-def setup_gemini(model_name, system_instruction=None, api_key=None):
-    api_key = api_key or os.environ.get("API_KEY")
-    if not api_key:
-        return None
-
-    genai.configure(api_key=api_key)
-
-    # genai.list_models()
-    return genai.GenerativeModel(
-        model_name,
-        system_instruction=system_instruction,
-    )
 
 
 

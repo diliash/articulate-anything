@@ -42,8 +42,20 @@ def preprocess(prompt: str, steps: Steps, gpu_id: str, cfg: DictConfig) -> Dict[
     if not processor:
         raise ValueError(f"Preprocess failed. Unsupported modality: {cfg.modality}")
 
-    link_actor = steps["Link Articulation"]["Link actor"][-1]
-    print("No. of link steps:", len(steps["Link Articulation"]["Link actor"]))
+    if "Link Articulation" not in steps.steps:
+        raise ValueError("Link Articulation step not found. Please ensure Link Articulation completed successfully before running Joint Articulation.")
+    
+    link_articulation_steps = steps["Link Articulation"]
+    if not isinstance(link_articulation_steps, Steps):
+        raise ValueError("Link Articulation step result is not in the expected format.")
+    
+    if "Link actor" not in link_articulation_steps.steps:
+        raise ValueError("Link actor not found in Link Articulation results. Please ensure Link Articulation completed successfully.")
+    if not link_articulation_steps["Link actor"]:
+        raise ValueError("Link actor list is empty. Please ensure Link Articulation completed successfully.")
+    
+    link_actor = link_articulation_steps["Link actor"][-1]
+    print("No. of link steps:", len(link_articulation_steps["Link actor"]))
     print("Picking the last link step")
     cfg.joint_actor.link_placement_path = join_path(
         link_actor.cfg.out_dir, link_actor.OUT_RESULT_PATH)
@@ -120,10 +132,20 @@ def process_visual(prompt: str, steps: Steps, gpu_id: str, cfg: DictConfig) -> D
     """
 
     if cfg.modality == "video" and cfg.joint_actor.targetted_affordance:
+        if "Affordance Extraction" not in steps.steps:
+            raise ValueError("Affordance Extraction step not found. Please ensure Affordance Extraction completed successfully.")
         extractor = steps["Affordance Extraction"]
         cfg.joint_actor.targetted_semantic_part = extractor.load_prediction()[
             "part_name"]
-        obj_selector = steps["Mesh Retrieval"]["Object Selection"]
+        
+        if "Mesh Retrieval" not in steps.steps:
+            raise ValueError("Mesh Retrieval step not found. Please ensure Mesh Retrieval completed successfully.")
+        mesh_retrieval_steps = steps["Mesh Retrieval"]
+        if not isinstance(mesh_retrieval_steps, Steps):
+            raise ValueError("Mesh Retrieval step result is not in the expected format.")
+        if "Object Selection" not in mesh_retrieval_steps.steps:
+            raise ValueError("Object Selection not found in Mesh Retrieval results. Please ensure Mesh Retrieval completed successfully.")
+        obj_selector = mesh_retrieval_steps["Object Selection"]
         # we will articulate the object that was selected by template match
         selected_obj_id = obj_selector.load_prediction()["obj_id"]
 
@@ -156,11 +178,23 @@ def process_visual(prompt: str, steps: Steps, gpu_id: str, cfg: DictConfig) -> D
 
 
 def process_text(prompt: str, steps: Steps, gpu_id: str, cfg: DictConfig) -> DictConfig:
+    if "Mesh Retrieval" not in steps.steps:
+        raise ValueError("Mesh Retrieval step not found. Please ensure Mesh Retrieval completed successfully before running Joint Articulation.")
+    
+    mesh_retrieval_steps = steps["Mesh Retrieval"]
+    if not isinstance(mesh_retrieval_steps, Steps):
+        raise ValueError("Mesh Retrieval step result is not in the expected format.")
+    
+    if "Box Layout" not in mesh_retrieval_steps.steps:
+        raise ValueError("Box Layout not found in Mesh Retrieval results. Please ensure Mesh Retrieval completed successfully.")
+    if "Mesh Retrieval" not in mesh_retrieval_steps.steps:
+        raise ValueError("Mesh Retrieval sub-step not found in Mesh Retrieval results. Please ensure Mesh Retrieval completed successfully.")
+    
     # IMPORTANT: move meshes to the joint_actor directory
-    layout_planner = steps["Mesh Retrieval"]["Box Layout"]
+    layout_planner = mesh_retrieval_steps["Box Layout"]
     box_layout = layout_planner.load_prediction()
 
-    mesh_searcher = steps["Mesh Retrieval"]["Mesh Retrieval"]
+    mesh_searcher = mesh_retrieval_steps["Mesh Retrieval"]
     mesh_info = mesh_searcher.load_prediction()
     meshes = {k: v["mesh_file"] for k, v in mesh_info.items()}
 

@@ -1,3 +1,5 @@
+import json
+
 import torch
 import clip
 import numpy as np
@@ -19,7 +21,14 @@ class ClipModel:
     def get_embedding(self, text):
         if not isinstance(text, list):
             text = [text]
-        text = [t.replace("\n", " ") for t in text]
+        processed_text = []
+        for t in text:
+            if isinstance(t, dict):
+                t = json.dumps(t, sort_keys=True)
+            elif not isinstance(t, str):
+                t = str(t)
+            processed_text.append(t.replace("\n", " "))
+        text = processed_text
         tokens = clip.tokenize(text).to('cuda')
         return self.model.encode_text(tokens).cpu().numpy()
 
