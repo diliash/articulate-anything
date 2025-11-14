@@ -15,6 +15,8 @@ import logging
 from articulate_anything.utils.utils import create_task_config
 from articulate_anything.utils.partnet_utils import track_obj_types
 import numpy as np
+import csv
+
 
 OBJECT_DETECTOR_INSTRUCTION = \
     """
@@ -98,11 +100,19 @@ class CategorySelector(Agent):
             affordance = self.object_detector.load_prediction()
             target_object = affordance['object']
 
-        if not os.path.exists("partnet_obj_types.json"):
+        if not os.path.exists("partnet_obj_types.json") and not self.cfg.is_artiverse:
             obj_types = track_obj_types(rename=True)
             save_json(obj_types, "partnet_obj_types.json")
 
-        candidate_objs = list(load_json("partnet_obj_types.json").keys())
+
+
+        if self.cfg.is_artiverse:
+            with open("/project/3dlg-hcvc/artiverse/artiverse_data/categories.csv") as f:
+                reader = csv.reader(f)
+                next(reader)  # Skip header
+                candidate_objs = [row[0] for row in reader]
+        else:
+            candidate_objs = list(load_json("partnet_obj_types.json").keys())
         clip_model = ClipModel(**clip_config)
 
         # Calculate similarities

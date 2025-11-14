@@ -20,7 +20,7 @@ using `object_annotation_gemini.txt` file.
 
 
 def create_embedding_entries(obj_dir):
-    annotation_path = join_path(obj_dir, "object_annotation_gemini.json")
+    annotation_path = os.path.join(obj_dir, "object_annotation_gemini.json")
     logging.info(f"👾 Processing {annotation_path}")
 
     if not os.path.exists(annotation_path):
@@ -73,14 +73,18 @@ if __name__ == '__main__':
     obj_ids = []
     for category in os.listdir(DATASET_DIR):
         category_path = os.path.join(DATASET_DIR, category)
+        
         if not os.path.isdir(category_path):
             continue
-
         for model_id in os.listdir(category_path):
             model_path = os.path.join(category_path, model_id)
             if not os.path.isdir(model_path):
                 continue
             obj_ids.append(os.path.join(category, model_id))
+
+
+    obj_dirs = [os.path.join(DATASET_DIR, obj_id) for obj_id in obj_ids]
+
 
     mp.set_start_method('spawn')
     logging.info("Starting")

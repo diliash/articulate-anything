@@ -191,6 +191,8 @@ def get_candidate_objs(most_similar_object,
                        cam_view="frontview",
                        input_dir="datasets/partnet-mobility-v0/dataset",
                        rename=True):
+    
+
     obj_type_ids = track_obj_types(input_dir, rename=rename)
     obj_ids = obj_type_ids[most_similar_object]
     # Prepare candidate images
@@ -206,14 +208,44 @@ def get_candidate_objs(most_similar_object,
             logging.warning(f"Image not found for object ID {obj_id}")
     return candidate_images, valid_obj_ids
 
+def get_candidate_objs_artiverse(most_similar_object,
+                               input_dir="/project/3dlg-hcvc/artiverse/artiverse_data/models"
+                               ):
+    
+    with open("artiverse_data_full_filtered_valid.json", 'r') as f:
+        split_json = json.load(f)
+
+    obj_ids = os.listdir(os.path.join(input_dir, most_similar_object))
+
+    obj_ids = [obj_id for obj_id in obj_ids if obj_id in split_json['train']]
+    
+    # Prepare candidate images
+    candidate_images = []
+    valid_obj_ids = []  # Keep track of valid object IDs
+    for obj_id in obj_ids:
+        img_path = join_path(input_dir, str(most_similar_object), str(obj_id),
+                             "imgs","19.png")
+        if os.path.exists(img_path):
+            candidate_images.append(Image.open(img_path))
+            valid_obj_ids.append(f"{most_similar_object}/{obj_id}")
+        else:
+            logging.warning(f"Image not found for object ID {obj_id}")
+    return candidate_images, valid_obj_ids
+
 def get_candidate_objs_from_categories(obj_categories, cam_view, input_dir="datasets/partnet-mobility-v0/dataset"):
     all_candidate_images = []
     all_candidate_obj_ids = []
 
     for obj_category in obj_categories:
-        candidate_images, candidate_obj_ids = get_candidate_objs(
-            obj_category, cam_view=cam_view, input_dir=input_dir
-        )
+        if "artiverse" in input_dir:
+            candidate_images, candidate_obj_ids = get_candidate_objs_artiverse(
+                obj_category,
+                input_dir=input_dir
+            )
+        else:
+            candidate_images, candidate_obj_ids = get_candidate_objs(
+                obj_category, cam_view=cam_view, input_dir=input_dir
+            )
         all_candidate_images.extend(candidate_images)
         all_candidate_obj_ids.extend(candidate_obj_ids)
 

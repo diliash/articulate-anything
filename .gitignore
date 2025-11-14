@@ -17,3 +17,5 @@ imgui.ini
 *.zip
 *scans
 *.pkl
+
+cotracker2.pth

@@ -81,6 +81,7 @@ class ArticulationPipeline:
 
     def process_link_articulation(self) -> ProcessingResult:
         """Process link articulation stage"""
+        print("-------------", self.cfg.dataset_dir)
         def _process_link():
             original_out = self.cfg.out_dir
             
@@ -89,14 +90,19 @@ class ArticulationPipeline:
                 self.cfg.out_dir = self.cfg.link_placement_path
             
             try:
-                return articulate_link(
+                result = articulate_link(
                     str(self.cfg.prompt),
                     self.steps,
                     str(self.cfg.gpu_id),
                     self.cfg
                 )
+                # Update the configuration with the modified dataset_dir
+                self.cfg.dataset_dir = result["cfg"].dataset_dir
+                return result["steps"]
             finally:
                 self.cfg.out_dir = original_out
+
+            
                 
         return self.execute_stage(
             "Link Articulation",

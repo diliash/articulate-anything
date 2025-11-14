@@ -55,17 +55,22 @@ def process_visual(prompt: str, steps: Steps, gpu_id: str, cfg: DictConfig) -> D
     
     if "Object Selection" not in mesh_retrieval_steps.steps:
         raise ValueError("Object Selection not found in Mesh Retrieval results. Please ensure Mesh Retrieval completed successfully.")
-    
+    print("process_visual:",cfg.dataset_dir)
     obj_selector = mesh_retrieval_steps["Object Selection"]
     # we will articulate the object that was selected by template match
     selected_obj_id = obj_selector.load_prediction()["obj_id"]
+    print("2342454444444444444444444444444444444444")
     render_partnet_obj(selected_obj_id, gpu_id, cfg, "stationary")
-    cfg.dataset_dir = join_path(cfg.dataset_dir, selected_obj_id)
     cfg = OmegaConf.create(cfg)  # copy for link_placement
     cfg.prompt = selected_obj_id
     temp_cfg = OmegaConf.create(cfg)
-    temp_cfg.dataset_dir = os.path.dirname(cfg.dataset_dir)  # because
+    temp_cfg.dataset_dir = cfg.dataset_dir  # because
+    cfg.dataset_dir = join_path(cfg.dataset_dir, selected_obj_id)
     # preprocess_partnet_object will change link_cfg.dataset_dir
+    print(os.path.join(cfg.dataset_dir, "link_summary.txt"))
+    # if os.path.exists(os.path.join(cfg.dataset_dir, "link_summary.txt")):
+    #     print("link_summary.txt already exists, skipping preprocess_partnet_object")
+    #     return cfg
     preprocess_partnet_object(selected_obj_id, gpu_id, temp_cfg)
     return cfg
 
@@ -161,9 +166,9 @@ def critic_function(iteration: int, seed: int, cfg: DictConfig, prompt: str, act
 
     link_critic = LinkCritic(create_task_config(cfg, join_path(
         "link_critic", f"iter_{iteration}", f"seed_{seed}")))
+    gt_image_path = f"robot_{cfg.cam_view}.png" 
     link_critic.generate_prediction(
-        gt_image_path=join_path(
-            cfg.dataset_dir, f"robot_{cfg.cam_view}.png"),
+        gt_image_path=gt_image_path,
         **actor_result,
         **cfg.gen_config,
     )
@@ -197,6 +202,7 @@ def articulate_link(prompt: str, steps: Steps, gpu_id: str, cfg: DictConfig) -> 
     preprocess_result = preprocess(prompt, steps, gpu_id, cfg)
     cfg = preprocess_result["cfg"]
 
+    print("234452345234", cfg.dataset_dir)
     # Actor-Critic loop or single actor run
     if cfg.modality == "text":
         retry_kwargs = {
@@ -221,4 +227,5 @@ def articulate_link(prompt: str, steps: Steps, gpu_id: str, cfg: DictConfig) -> 
             post_process_iter=post_process_iter,
         )
 
-    return steps
+    # Return both steps and the modified configuration
+    return {"steps": steps, "cfg": cfg}

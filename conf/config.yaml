@@ -2,18 +2,19 @@ prompt: "chair"
 additional_prompt: null
 modality: "text"
 out_dir: "results"
-dataset_dir: "datasets/partnet-mobility-v0/dataset"
+dataset_dir: "/cs/3dlg-jupiter-project/artiverse/singapo_data_full_filtered"
 api_key: null
 parallel: 1
 max_load_per_gpu: 10
 obj_ids: null
 gpu_id: 0
 cam_view: frontview
-model_name: gemini-2.0-flash
+model_name: gpt-4o-2024-11-20
 link_placement_path: null
 gen_config:
   overwrite: false # whether to overwrite the VLM output
 render_part_views: false
+is_artiverse: true
 
 actor_critic:
   actor_only: false

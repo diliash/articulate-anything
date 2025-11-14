@@ -281,6 +281,7 @@ def articulate_joint(prompt: str, steps: Steps, gpu_id: str, cfg: DictConfig) ->
         # populated by the preprocess function
         "targetted_affordance": cfg.joint_actor.targetted_semantic_part,
     }
+    print("###########", cfg.dataset_dir)
     if cfg.joint_actor.mode != "video":
         actor_result = actor_function(iteration=0, seed=0,
                                       cfg=cfg, prompt=prompt,

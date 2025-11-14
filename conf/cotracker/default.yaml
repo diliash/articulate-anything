@@ -1,5 +1,5 @@
 mode: online # (online, offline). Offline uses more memory
-checkpoint_path: "../co-tracker/checkpoints/cotracker2.pth"
+checkpoint_path: "/local-scratch/localhome/efa33/projects/articulate-anything/cotracker2.pth"
 grid_size: 30
 render_all: false
 displacement_threshold: null

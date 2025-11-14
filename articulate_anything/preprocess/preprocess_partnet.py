@@ -43,6 +43,7 @@ def render_object(urdf_file: str, gpu_id: str, simulator_cfg: DictConfig, render
     )
     env = os.environ.copy()
     env["CUDA_VISIBLE_DEVICES"] = str(gpu_id)
+    print(command)
     run_subprocess(command, env=env)
 
 
@@ -57,11 +58,12 @@ def render_partnet_obj(obj_id: str, gpu_id: str, cfg: DictConfig, render_mode: s
     :param urdf_file: Optional path to URDF file. If not provided, it will be derived from obj_id
     """
     obj_dir = join_path(cfg.dataset_dir, obj_id)
+    print(obj_dir)
     if urdf_file is None:
         urdf_file = get_urdf_file(obj_dir)
 
     simulator_cfg = OmegaConf.create(cfg.simulator)
-    if get_obj_type(obj_id) == "Chair":
+    if not cfg.is_artiverse and get_obj_type(obj_id) == "Chair":
         simulator_cfg.urdf.raise_distance_offset = 0.15
 
     rotate_urdf(urdf_file)
@@ -106,7 +108,10 @@ def preprocess_partnet_object(obj_id: str, gpu_id: str, cfg: DictConfig,):
     """
     Get the link summary for the partnet object
     """
+    print("Preprocessing PartNet object:", obj_id)
+    print(cfg.dataset_dir)
     obj_dir = join_path(cfg.dataset_dir, obj_id)
+    print("****OBJ_DIR:",obj_dir)
     urdf_file = get_urdf_file(obj_dir)
     robot = mask_urdf(urdf_file)
     link_summary = robot.summarize()
